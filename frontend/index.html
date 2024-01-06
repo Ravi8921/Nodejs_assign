@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Booking Appointment</title>
+  <!-- Include Bootstrap CSS -->
+  <link href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet" />
+</head>
+
+<body>
+  <div class="container mt-5">
+    <h1 class="text-center">Book an Appointment</h1>
+    <form id="appointmentForm">
+      <div class="form-group">
+        <label for="fullName">Full Name</label>
+        <input type="text" class="form-control" id="fullName" placeholder="Enter your full name" />
+      </div>
+      <div class="form-group">
+        <label for="email">Email</label>
+        <input type="email" class="form-control" id="email" placeholder="Enter your email" />
+      </div>
+      <div class="form-group">
+        <label for="phone">Phone Number</label>
+        <input type="tel" class="form-control" id="phone" placeholder="Enter your phone number" />
+      </div>
+      <div class="form-group">
+        <label for="appointmentDate">Appointment Date</label>
+        <input type="date" class="form-control" id="appointmentDate" />
+      </div>
+
+      <button type="submit" class="btn btn-primary">Book Appointment</button>
+    </form>
+
+    <h2 class="mt-4">Appointments</h2>
+    <ul id="appointmentList" class="list-group">
+      <!-- Appointments will be dynamically added here -->
+    </ul>
+  </div>
+
+  <!-- Include Bootstrap JS and jQuery (for form validation) -->
+  <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.5.3/dist/umd/popper.min.js"></script>
+  <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+  <!-- Include Axios -->
+  <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+  <script>
+    // Function to fetch and display data from the API
+    function fetchData() {
+      axios
+        .get("http://localhost:3000/appointment")
+        .then((response) => {
+          const data = response.data.data; // Access the 'data' field
+
+          const appointmentList = document.getElementById("appointmentList");
+
+          // Ensure data is an array before processing
+          if (!Array.isArray(data)) {
+            console.error("Invalid data format received:", data);
+            return;
+          }
+
+          // Rest of your code remains unchanged...
+
+          // Clear the existing list
+          appointmentList.innerHTML = "";
+
+          // Loop through each appointment in the data array
+          data.forEach((appointment) => {
+            const listItem = document.createElement("li");
+            listItem.className = "list-group-item";
+            listItem.innerHTML = `
+          Name:  <strong>${appointment.fullName}</strong><br>
+          Email: ${appointment.email}<br>
+          Phone: ${appointment.phone}<br>
+          Appointment Date: ${appointment.appointmentDate}<br>
+        `;
+
+            // Create and configure the remove button for each appointment
+            const removeButton = document.createElement("button");
+            removeButton.className =
+              "btn btn-danger btn-sm float-right remove-btn";
+            removeButton.textContent = "Remove";
+
+            // Add click event listener to remove the item and handle local storage
+            removeButton.addEventListener("click", function () {
+              listItem.remove();
+              removeAppointmentFromStorage(appointment);
+            });
+
+            listItem.appendChild(removeButton);
+            appointmentList.appendChild(listItem);
+          });
+        })
+        .catch((error) => {
+          console.error("Error fetching data:", error);
+        });
+    }
+
+    // ... rest of your code ...
+
+    // Function to save an appointment to localStorage
+    function saveAppointmentToStorage(appointment) {
+      const appointments = getStoredAppointments();
+      appointments.push(appointment);
+      localStorage.setItem("appointments", JSON.stringify(appointments));
+    }
+
+    // Function to remove an appointment from localStorage
+    function removeAppointmentFromStorage(appointment) {
+      const appointments = getStoredAppointments();
+      const updatedAppointments = appointments.filter(
+        (storedAppointment) =>
+          JSON.stringify(storedAppointment) !== JSON.stringify(appointment)
+      );
+      localStorage.setItem(
+        "appointments",
+        JSON.stringify(updatedAppointments)
+      );
+    }
+
+    // Function to get stored appointments from localStorage
+    function getStoredAppointments() {
+      const appointments = localStorage.getItem("appointments");
+      return appointments ? JSON.parse(appointments) : [];
+    }
+
+    // Call the fetchData function to initially load data
+    fetchData();
+
+    document
+      .getElementById("appointmentForm")
+      .addEventListener("submit", function (event) {
+        event.preventDefault();
+
+        // Get input values (inside the submit event callback)
+        const fullName = document.getElementById("fullName").value;
+        const email = document.getElementById("email").value;
+        const phone = document.getElementById("phone").value;
+        const appointmentDate =
+          document.getElementById("appointmentDate").value;
+
+        // Create a new appointment object
+        const newAppointment = {
+          fullName,
+          email,
+          phone,
+          appointmentDate,
+        };
+
+        // Save the new appointment to localStorage
+        saveAppointmentToStorage(newAppointment);
+
+        // Send a POST request to the API to add the new appointment
+        axios
+          .post(
+            "http://localhost:3000/appointment", // Replace with your API endpoint
+            newAppointment
+          )
+          .then((response) => {
+            // After adding, fetch and display updated data
+            fetchData();
+          })
+          .catch((error) => {
+            console.error("Error adding appointment:", error);
+          });
+
+        // Clear the form inputs
+        document.getElementById("fullName").value = "";
+        document.getElementById("email").value = "";
+        document.getElementById("phone").value = "";
+        document.getElementById("appointmentDate").value = "";
+      });
+
+    // Load appointments from localStorage when the page loads
+    const storedAppointments = getStoredAppointments();
+    storedAppointments.forEach((appointment) => {
+      saveAppointmentToStorage(appointment);
+    });
+  </script>
+</body>
+
+</html>
